@@ -254,7 +254,7 @@ int main() {
 }
 
 
-//// Boundary condition (wet node)
+//// Boundary condition (wet node) 
 //// Setting macroscopic quantities at boundaries
 //// Bottom wall (rest)
 //rho[0][0] = 1 / (1 - v[0][0]) * (fprop[0][0][8] + fprop[0][0][0] + fprop[0][0][2] + 2 * (fprop[0][0][3] + fprop[0][0][6] + fprop[0][0][7]));
