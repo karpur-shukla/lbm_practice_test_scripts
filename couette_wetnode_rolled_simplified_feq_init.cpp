@@ -178,7 +178,7 @@ int main() {
       for (int j = 0; j < y_len; j++) {
         vel_sq[i][j] = std::pow(ux[i][j], 2) + std::pow(uy[i][j], 2);
         for (int k = 0; k < q_num; k++) {
-          f_eq[i][j][k] = w[k] * (rho[i][j] + 3 * (ux[i][j] * cx_float[k] + uy[i][j] * cy_float[k]));
+          f_eq[i][j][k] = w[k] * (rho[i][j] + 3 * (ux[i][j] * cx_int[k] + uy[i][j] * cy_int[k]));
         }
         
 //        f_eq[i][j][0] = ((2 * rho[i][j])/9.0) * (2.0 - 3.0 * vel_sq[i][j]);
