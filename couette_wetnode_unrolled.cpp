@@ -205,7 +205,7 @@ int main() {
         for (int k = 0; k < q_num; k++) {
           new_x = (i + cx_int[k] + x_len) % x_len;
           new_y = (j + cy_int[k] + y_len) % y_len;
-          f_prop[new_x][j][k] = f[i][j][k];
+          f_prop[new_x][new_y][k] = f[i][j][k];
         }
       }
     }
