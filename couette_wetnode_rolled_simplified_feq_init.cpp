@@ -136,7 +136,7 @@ int main() {
   for (int i = 0; i < x_len; i++) {
     for (int j = 0; j < y_len; j++) {
       for (int k = 0; k < q_num; k++) {
-        f_eq[i][j][k] = w[k]
+        f_eq[i][j][k] = w[k];
       }
 //      f_eq[i][j][0] = ((2 * rho_init)/9.0) * (2.0 - 3.0 * vel_init_sq);
 //      f_eq[i][j][1] = (rho_init/18.0) * (2.0 + 6.0 * ux_init + 9.0 * std::pow(ux_init, 2) - 3.0 * vel_init_sq);
