@@ -57,7 +57,7 @@ typedef std::vector<std::vector<std::vector<double>>> array3D_float;
  * of the TOTAL initial velocity; i.e. (ux_init)^2 + (uy_init)^2). Defining vel_init_sq just lets the initialisation be more comprehensible.*/
 int x_len = 40;                   // number of x grid points. System is periodic in x.
 int y_len = 20;                   // number of y grid points
-int t_steps = 10000001;           // number of time steps. Since I update the densities and velocities at the beginning of the simulation, I'm doing one extra timestep.
+int t_steps = 10001;           // number of time steps. Since I update the densities and velocities at the beginning of the simulation, I'm doing one extra timestep.
 double tau = 0.9;                 // BGK relaxation time
 double omega = 1.0/tau;           // BGK inverse relaxation time (lowercase omega, NOT capital omega)
 double rho_init = 1.0;            // initial density
