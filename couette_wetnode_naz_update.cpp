@@ -163,14 +163,31 @@ int main() {
     /* Here, we compute the macroscopic quantities (density and the velocity fields) at each time step. Again, we follow the suggestion in Krüger (Sec. 3.3.3.3 this time, Pg. 69) to unroll the
      * calculations in momentum space and perform each calculation explicitly. As before, I have a good handle on how the loop in momentum space would be input here; I'm just doing this at Krüger's
      * suggestion. These expressions are taken from the aforementioned section in Krüger (specifically, on Pg. 69, Eq. 3.12). */
+    double sum = 0;
     for (int i = 0; i < x_len; i++) {
       for (int j = 0; j < y_len; j++) {
-        rho[i][j] = f_prop[i][j][0] + f_prop[i][j][1] + f_prop[i][j][2] + f_prop[i][j][3] + f_prop[i][j][4] + f_prop[i][j][5] + f_prop[i][j][6] + f_prop[i][j][7] + f_prop[i][j][8];
-        ux[i][j] = (f_prop[i][j][1] + f_prop[i][j][5] + f_prop[i][j][8] - f_prop[i][j][3] - f_prop[i][j][6] - f_prop[i][j][7]) / rho[i][j];
-        uy[i][j] = (f_prop[i][j][2] + f_prop[i][j][5] + f_prop[i][j][6] - f_prop[i][j][4] - f_prop[i][j][7] - f_prop[i][j][8]) / rho[i][j];
+        for (int k = 0; k < q_num; ++k) {
+          sum += f[i][j][k];
+        }
+        rho[i][j] = sum;
+        sum = 0;
       }
     }
 
+    double sum1 = 0;
+    double sum2 = 0;
+    for (int i = 0; i < x_len; ++i) {
+      for (int j = 0; j < y_len; ++j) {
+        for (int k = 0; k < q_num; ++k) {
+          sum1 += ck_x[k]*f[i][j][k];
+          sum2 += ck_y[k]*f[i][j][k];
+        }
+        u[i][j] = sum1/rho[i][j];
+        v[i][j] = sum2/rho[i][j];
+        sum1 = 0;
+        sum2 = 0;
+      }
+    }
 
     /* Here, we compute the equilibrium distribution at the given timestep. As before, this explicitly unrolls the loop over momentum space in the
      * calculation of the distribution functions, using Eq. 3.65 (Pg. 93) in Krüger. THIS DOES NOT YET INCORPORATE A VARIABLE SPEED OF SOUND. */
