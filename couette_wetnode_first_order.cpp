@@ -227,8 +227,8 @@ int main() {
 
       // Bounce-back on the top plate, with the wall motion
       f_prop[i][y_len - 1][4] = f_prop[i][y_len - 1][2];
-      f_prop[i][y_len - 1][7] = f_prop[i][y_len - 1][5] + 6 * rho[i][y_len - 1] * w[7] * cx_float[7] * u_wall_top;
-      f_prop[i][y_len - 1][8] = f_prop[i][y_len - 1][6] + 6 * rho[i][y_len - 1] * w[8] * cx_float[8] * u_wall_top;
+      f_prop[i][y_len - 1][7] = f_prop[i][y_len - 1][5] + 2 * rho[i][y_len - 1] * w[7] * (cx_float[7] * u_wall_top)/cs_sq;
+      f_prop[i][y_len - 1][8] = f_prop[i][y_len - 1][6] + 2 * rho[i][y_len - 1] * w[8] * (cx_float[8] * u_wall_top)/cs_sq;
     }
 
 
