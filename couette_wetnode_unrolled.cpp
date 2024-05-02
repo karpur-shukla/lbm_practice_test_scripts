@@ -211,17 +211,6 @@ int main() {
     }
 
 
-    ///* Here, we apply the boundary conditions. As mentioned in Krüger Sec. 5.3.4.1 (Pg. 190), since the lattice Boltzmann equation doesn't directly deal with the macroscopic fields (density and
-    // * velocity), we need to explicitly impose the continuity equation and the no-penetration condition. The wall density is straightforwardly calculated in the aforementioned section of Krüger.
-    // * However, we note that there is an explicit de-linking of timestep and space-step in this derivation. Thus, for a speed c = dx/dt for timestep dt and space step dx, expressions that should
-    // * be c/(c ± u_wall) are instead written here as 1/(1 ± u_wall). This uses Eq. 5.32 and Eq. 5.33 (Pg. 191) in Krüger. */
-    //for (int i; i < x_len; i++) {
-    //    ux[i][0] = u_wall_bottom;
-    //    ux[i][y_len-1] = u_wall_top;
-    //    rho[i][0] = 1.0 / (1.0 - u_wall_bottom) * (f_prop[i][0][0] + f_prop[i][0][1] + f_prop[i][0][3] + 2 * (f_prop[i][0][4] + f_prop[i][0][7] + f_prop[i][0][8]));
-    //    rho[i][y_len] = 1.0 / (1.0 + u_wall_top) * (f_prop[i][y_len][0] + f_prop[i][y_len][1] + f_prop[i][y_len][3] + 2 * (f_prop[i][y_len][2] + f_prop[i][y_len][5] + f_prop[i][0][6]));
-    //}
-
     /* Here, we apply the boundary conditions onto the newly-streamed f_prop. This uses the bounce back scheme, modified for the wet-node layout (as was done here). Here, it's easier to use the
      * explicit expressions given in Eq. 5.25, 5.27, and 5.28 in Krüger, rather than the general expression Eq. 5.26 in Krüger. Like with the "unrolled" expressions for rho, u_x, and u_y; this is not
      * done because implementing those expressions is particularly challenging.*/
@@ -246,39 +235,3 @@ int main() {
     std::cout << ux[10][j] << std::endl;
   }
 }
-
-
-//// Boundary condition (wet node)
-//// Setting macroscopic quantities at boundaries
-//// Bottom wall (rest)
-//rho[0][0] = 1 / (1 - v[0][0]) * (fprop[0][0][8] + fprop[0][0][0] + fprop[0][0][2] + 2 * (fprop[0][0][3] + fprop[0][0][6] + fprop[0][0][7]));
-//u[0][0] = 0;
-//v[0][0] = 0;
-//
-//// Top wall (moving)
-//rho[0][NY - 1] = 1 / (1 + v[0][NY - 1]) * (fprop[0][NY - 1][8] + fprop[0][NY - 1][0] + fprop[0][NY - 1][2] + 2 * (fprop[0][NY - 1][1] + fprop[0][NY - 1][5] + fprop[0][NY - 1][6]));
-//u[0][NY - 1] = u_max;
-//v[0][NY - 1] = 0;
-//
-//// Setting populations quantities at boundaries
-//if (wetnode == 1) {         // 1) equilibrium scheme BC
-//    for (int k = 0; k < NPOP; ++k) {
-//        fprop[0][0][k] = w[k] * (rho[0][0] + 3 * (cx[k] * u[0][0] + cy[k] * v[0][0]));
-//        fprop[0][NY - 1][k] = w[k] * (rho[0][NY - 1] + 3 * (cx[k] * u[0][NY - 1] + cy[k] * v[0][NY - 1]));
-//    }
-//}
-//else if (wetnode == 2) {  // 2) non-equilibrium extrapolation method BC
-//    for (int k = 0; k < NPOP; ++k) {
-//        fprop[0][0][k] = w[k] * (rho[0][0] + 3 * (cx[k] * u[0][0] + cy[k] * v[0][0])) + (fprop[1][0][k] - feq[1][0][k]);
-//        fprop[0][NY - 1][k] = w[k] * (rho[0][NY - 1] + 3 * (cx[k] * u[0][NY - 1] + cy[k] * v[0][NY - 1])) + (fprop[NX - 2][NY - 1][k] - feq[NX - 2][NY - 1][k]);
-//    }
-//}
-//else {                    // 3) non-equilibrium bounce-back method BC (note: rho=1)
-//    fprop[0][0][2] = fprop[0][0][4] + 2.0 / 3.0 * v[0][0];
-//    fprop[0][0][5] = fprop[0][0][7] + 1.0 / 6.0 * v[0][0] - 0.5 * (fprop[0][0][0] - fprop[0][0][2]) + 0.5 * u[0][0];
-//    fprop[0][0][6] = fprop[0][0][8] + 1.0 / 6.0 * v[0][0] + 0.5 * (fprop[0][0][0] - fprop[0][0][2]) - 0.5 * u[0][0];
-//
-//    fprop[0][NY - 1][4] = fprop[0][NY - 1][2] - 2.0 / 3.0 * v[0][NY - 1];
-//    fprop[0][NY - 1][7] = fprop[0][NY - 1][5] - 1.0 / 6.0 * v[0][NY - 1] + 0.5 * (fprop[0][NY - 1][0] - fprop[0][NY - 1][2]) - 0.5 * u[0][NY - 1];
-//    fprop[0][NY - 1][8] = fprop[0][NY - 1][6] - 1.0 / 6.0 * v[0][NY - 1] + 0.5 * (fprop[0][NY - 1][2] - fprop[0][NY - 1][0]) + 0.5 * u[0][NY - 1];
-//}
