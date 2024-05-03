@@ -52,11 +52,11 @@ typedef std::vector<std::vector<std::vector<double>>> array3D_float;
  * of the TOTAL initial velocity; i.e. (ux_init)^2 + (uy_init)^2). Defining vel_init_sq just lets the initialisation be more comprehensible.*/
 int x_len = 40;                   // number of x grid points. System is periodic in x.
 int y_len = 20;                   // number of y grid points
-int t_steps = 10001;           // number of time steps. Since I update the densities and velocities at the beginning of the simulation, I'm doing one extra timestep.
+int t_steps = 10000001;           // number of time steps. Since I update the densities and velocities at the beginning of the simulation, I'm doing one extra timestep.
 double tau = 0.9;                 // BGK relaxation time
-double omega = 1.0 / tau;         // BGK inverse relaxation time (lowercase omega, NOT capital omega)
+double omega = 1.0/tau;           // BGK inverse relaxation time (lowercase omega, NOT capital omega)
 double rho_init = 1.0;            // initial density
-double cs_sq = 1 / 3.0;           // speed of sound squared in lattice units
+double cs_sq = 1.0/3.0;           // speed of sound squared in lattice units
 double u_wall_top = 0.1;          // top wall velocity
 double u_wall_bottom = 0.0;       // bottom wall velocity
 double ux_init = 0.0;             // global initial velocity in the x-direction
@@ -64,10 +64,12 @@ double uy_init = 0.0;             // global initial velocity in the y-direction
 
 double vel_init_sq = std::pow(ux_init, 2) + std::pow(uy_init, 2); // square of the magnitude of the initial velocity
 
-/* These are the lattice parameters. We define the x-direction and y-direction lattice speeds as both a float vector and an int vector. The float vector can go into an equation for the */
+/* These are the lattice parameters. We define the x-direction and y-direction lattice speeds as both a float vector and an int vector. The float vector goes into equations in which the lattice
+ * projections (the c_i's, i.e., the x-direction and y-direction lattice speeds) are used. (Usually, this involves expressions involving the dot product of u and c.) */
 int q_num = 9; // number of velocity directions (Q in DnQm). Here, Q = 9, with q = 0 as self-velocity.
 
 std::vector<float> w = {4.0/9.0, 1.0/9.0, 1.0/9.0, 1.0/9.0, 1.0/9.0, 1.0/36.0, 1.0/36.0, 1.0/36.0, 1.0/36.0}; // lattice weights
+
 std::vector<int> cx_int = {0, 1, 0, -1,  0, 1, -1, -1,  1};                       // x-direction lattice speeds
 std::vector<int> cy_int = {0, 0, 1,  0, -1, 1,  1, -1, -1};                       // y-direction lattice speeds
 std::vector<float> cx_float = {0.0, 1.0, 0.0, -1.0,  0.0, 1.0, -1.0, -1.0,  1.0}; // x-direction lattice speeds
@@ -117,15 +119,15 @@ int main() {
    * in Krüger (Sec. 3.4.5). These can be further simplified to the equations given in the aforementioned section in Krüger (specifically, on Pg. 93, Eq. 3.65). */
   for (int i = 0; i < x_len; i++) {
     for (int j = 0; j < y_len; j++) {
-      f_eq[i][j][0] = (4.0 / 9.0) * rho[i][j] * (1.0 - (vel_sq[i][j] / (2 * cs_sq)));
-      f_eq[i][j][1] = (1.0 / 9.0) * rho[i][j] * (1.0 + (ux[i][j]) / cs_sq + (std::pow(ux[i][j], 2)) / (2 * std::pow(cs_sq, 2)) - (vel_sq[i][j]) / (2 * cs_sq));
-      f_eq[i][j][2] = (1.0 / 9.0) * rho[i][j] * (1.0 + (uy[i][j]) / cs_sq + (std::pow(uy[i][j], 2)) / (2 * std::pow(cs_sq, 2)) - (vel_sq[i][j]) / (2 * cs_sq));
-      f_eq[i][j][3] = (1.0 / 9.0) * rho[i][j] * (1.0 - (ux[i][j]) / cs_sq + (std::pow(ux[i][j], 2)) / (2 * std::pow(cs_sq, 2)) - (vel_sq[i][j]) / (2 * cs_sq));
-      f_eq[i][j][4] = (1.0 / 9.0) * rho[i][j] * (1.0 - (uy[i][j]) / cs_sq + (std::pow(uy[i][j], 2)) / (2 * std::pow(cs_sq, 2)) - (vel_sq[i][j]) / (2 * cs_sq));
-      f_eq[i][j][5] = (1.0 / 36.0) * rho[i][j] * (1.0 + (ux[i][j] + uy[i][j]) / cs_sq + (ux[i][j] * uy[i][j]) / (std::pow(cs_sq, 2)) + (vel_sq[i][j]) / cs_sq);
-      f_eq[i][j][6] = (1.0 / 36.0) * rho[i][j] * (1.0 - (ux[i][j] - uy[i][j]) / cs_sq - (ux[i][j] * uy[i][j]) / (std::pow(cs_sq, 2)) + (vel_sq[i][j]) / cs_sq);
-      f_eq[i][j][7] = (1.0 / 36.0) * rho[i][j] * (1.0 - (ux[i][j] + uy[i][j]) / cs_sq + (ux[i][j] * uy[i][j]) / (std::pow(cs_sq, 2)) + (vel_sq[i][j]) / cs_sq);
-      f_eq[i][j][8] = (1.0 / 36.0) * rho[i][j] * (1.0 + (ux[i][j] - uy[i][j]) / cs_sq - (ux[i][j] * uy[i][j]) / (std::pow(cs_sq, 2)) + (vel_sq[i][j]) / cs_sq);
+      f_eq[i][j][0] = (4.0/9.0) * rho[i][j] * (1.0 - (vel_sq[i][j] / (2 * cs_sq)));
+      f_eq[i][j][1] = (1.0/9.0) * rho[i][j] * (1.0 + (ux[i][j]) / cs_sq + (std::pow(ux[i][j], 2)) / (2 * std::pow(cs_sq, 2)) - (vel_sq[i][j]) / (2 * cs_sq));
+      f_eq[i][j][2] = (1.0/9.0) * rho[i][j] * (1.0 + (uy[i][j]) / cs_sq + (std::pow(uy[i][j], 2)) / (2 * std::pow(cs_sq, 2)) - (vel_sq[i][j]) / (2 * cs_sq));
+      f_eq[i][j][3] = (1.0/9.0) * rho[i][j] * (1.0 - (ux[i][j]) / cs_sq + (std::pow(ux[i][j], 2)) / (2 * std::pow(cs_sq, 2)) - (vel_sq[i][j]) / (2 * cs_sq));
+      f_eq[i][j][4] = (1.0/9.0) * rho[i][j] * (1.0 - (uy[i][j]) / cs_sq + (std::pow(uy[i][j], 2)) / (2 * std::pow(cs_sq, 2)) - (vel_sq[i][j]) / (2 * cs_sq));
+      f_eq[i][j][5] = (1.0/36.0) * rho[i][j] * (1.0 + (ux[i][j] + uy[i][j]) / cs_sq + (ux[i][j] * uy[i][j]) / (std::pow(cs_sq, 2)) + (vel_sq[i][j]) / cs_sq);
+      f_eq[i][j][6] = (1.0/36.0) * rho[i][j] * (1.0 - (ux[i][j] - uy[i][j]) / cs_sq - (ux[i][j] * uy[i][j]) / (std::pow(cs_sq, 2)) + (vel_sq[i][j]) / cs_sq);
+      f_eq[i][j][7] = (1.0/36.0) * rho[i][j] * (1.0 - (ux[i][j] + uy[i][j]) / cs_sq + (ux[i][j] * uy[i][j]) / (std::pow(cs_sq, 2)) + (vel_sq[i][j]) / cs_sq);
+      f_eq[i][j][8] = (1.0/36.0) * rho[i][j] * (1.0 + (ux[i][j] - uy[i][j]) / cs_sq - (ux[i][j] * uy[i][j]) / (std::pow(cs_sq, 2)) + (vel_sq[i][j]) / cs_sq);
     }
   }
   f = f_eq;
@@ -152,7 +154,8 @@ int main() {
 
 
     /* Here, we compute the equilibrium distribution at the given timestep. As before, this explicitly unrolls the loop over momentum space in the calculation of the distribution functions, by
-     * expanding Eq. 3.54 (Pg. 82) in Krüger (Sec. 3.4.5). These can, as always, be further simplified to the equations given in Eq. 3.65 (Pg. 93) in Krüger. */
+     * expanding Eq. 3.54 (Pg. 82) in Krüger (Sec. 3.4.5). These can, as always, be further simplified to the equations given in Eq. 3.65 (Pg. 93) in Krüger. For completeness, we also show what the
+     * expression in the k loop would look like.*/
     for (int i = 0; i < x_len; i++) {
       for (int j = 0; j < y_len; j++) {
         vel_sq[i][j] = std::pow(ux[i][j], 2) + std::pow(uy[i][j], 2);
@@ -163,15 +166,15 @@ int main() {
 //          f_eq[i][j][k] = w[k] * rho[i][j] * (1 + u_dot_ci[i][j][k] / cs_sq + std::pow(u_dot_ci[i][j][k], 2) / (2 * std::pow(cs_sq, 2)) - vel_sq[i][j] / (2 * cs_sq));
 //        }
 
-        f_eq[i][j][0] = (4.0 / 9.0) * rho[i][j] * (1.0 - (vel_sq[i][j] / (2 * cs_sq)));
-        f_eq[i][j][1] = (1.0 / 9.0) * rho[i][j] * (1.0 + (ux[i][j]) / cs_sq + (std::pow(ux[i][j], 2)) / (2 * std::pow(cs_sq, 2)) - (vel_sq[i][j]) / (2 * cs_sq));
-        f_eq[i][j][2] = (1.0 / 9.0) * rho[i][j] * (1.0 + (uy[i][j]) / cs_sq + (std::pow(uy[i][j], 2)) / (2 * std::pow(cs_sq, 2)) - (vel_sq[i][j]) / (2 * cs_sq));
-        f_eq[i][j][3] = (1.0 / 9.0) * rho[i][j] * (1.0 - (ux[i][j]) / cs_sq + (std::pow(ux[i][j], 2)) / (2 * std::pow(cs_sq, 2)) - (vel_sq[i][j]) / (2 * cs_sq));
-        f_eq[i][j][4] = (1.0 / 9.0) * rho[i][j] * (1.0 - (uy[i][j]) / cs_sq + (std::pow(uy[i][j], 2)) / (2 * std::pow(cs_sq, 2)) - (vel_sq[i][j]) / (2 * cs_sq));
-        f_eq[i][j][5] = (1.0 / 36.0) * rho[i][j] * (1.0 + (ux[i][j] + uy[i][j]) / cs_sq + (ux[i][j] * uy[i][j]) / (std::pow(cs_sq, 2)) + (vel_sq[i][j]) / cs_sq);
-        f_eq[i][j][6] = (1.0 / 36.0) * rho[i][j] * (1.0 - (ux[i][j] - uy[i][j]) / cs_sq - (ux[i][j] * uy[i][j]) / (std::pow(cs_sq, 2)) + (vel_sq[i][j]) / cs_sq);
-        f_eq[i][j][7] = (1.0 / 36.0) * rho[i][j] * (1.0 - (ux[i][j] + uy[i][j]) / cs_sq + (ux[i][j] * uy[i][j]) / (std::pow(cs_sq, 2)) + (vel_sq[i][j]) / cs_sq);
-        f_eq[i][j][8] = (1.0 / 36.0) * rho[i][j] * (1.0 + (ux[i][j] - uy[i][j]) / cs_sq - (ux[i][j] * uy[i][j]) / (std::pow(cs_sq, 2)) + (vel_sq[i][j]) / cs_sq);
+        f_eq[i][j][0] = (4.0/9.0) * rho[i][j] * (1.0 - (vel_sq[i][j] / (2 * cs_sq)));
+        f_eq[i][j][1] = (1.0/9.0) * rho[i][j] * (1.0 + (ux[i][j]) / cs_sq + (std::pow(ux[i][j], 2)) / (2 * std::pow(cs_sq, 2)) - (vel_sq[i][j]) / (2 * cs_sq));
+        f_eq[i][j][2] = (1.0/9.0) * rho[i][j] * (1.0 + (uy[i][j]) / cs_sq + (std::pow(uy[i][j], 2)) / (2 * std::pow(cs_sq, 2)) - (vel_sq[i][j]) / (2 * cs_sq));
+        f_eq[i][j][3] = (1.0/9.0) * rho[i][j] * (1.0 - (ux[i][j]) / cs_sq + (std::pow(ux[i][j], 2)) / (2 * std::pow(cs_sq, 2)) - (vel_sq[i][j]) / (2 * cs_sq));
+        f_eq[i][j][4] = (1.0/9.0) * rho[i][j] * (1.0 - (uy[i][j]) / cs_sq + (std::pow(uy[i][j], 2)) / (2 * std::pow(cs_sq, 2)) - (vel_sq[i][j]) / (2 * cs_sq));
+        f_eq[i][j][5] = (1.0/36.0) * rho[i][j] * (1.0 + (ux[i][j] + uy[i][j]) / cs_sq + (ux[i][j] * uy[i][j]) / (std::pow(cs_sq, 2)) + (vel_sq[i][j]) / cs_sq);
+        f_eq[i][j][6] = (1.0/36.0) * rho[i][j] * (1.0 - (ux[i][j] - uy[i][j]) / cs_sq - (ux[i][j] * uy[i][j]) / (std::pow(cs_sq, 2)) + (vel_sq[i][j]) / cs_sq);
+        f_eq[i][j][7] = (1.0/36.0) * rho[i][j] * (1.0 - (ux[i][j] + uy[i][j]) / cs_sq + (ux[i][j] * uy[i][j]) / (std::pow(cs_sq, 2)) + (vel_sq[i][j]) / cs_sq);
+        f_eq[i][j][8] = (1.0/36.0) * rho[i][j] * (1.0 + (ux[i][j] - uy[i][j]) / cs_sq - (ux[i][j] * uy[i][j]) / (std::pow(cs_sq, 2)) + (vel_sq[i][j]) / cs_sq);
       }
     }
 
@@ -180,14 +183,14 @@ int main() {
     for (int i = 0; i < x_len; i++) {
       for (int j = 0; j < y_len; j++) {
         for (int k = 0; k < q_num; k++) {
-          f[i][j][k] = (1 - (1 / tau)) * f_prop[i][j][k] + (1 / tau) * f_eq[i][j][k];
+          f[i][j][k] = (1 - (1.0/tau)) * f_prop[i][j][k] + (1.0/tau) * f_eq[i][j][k];
         }
       }
     }
 
 
-    /* Here, we perform the streaming step, without applying the boundary condition at the wall, but with applying the periodic boundary conditions.
-     * The boundary condition at the wall shifts everything over, and this will be applied momentarily. */
+    /* Here, we perform the streaming step, without applying the boundary condition at the wall, but with applying the periodic boundary conditions. The boundary condition at the wall shifts
+     * everything over, and this will be applied momentarily. */
     for (int i = 0; i < x_len; i++) {
       for (int j = 0; j < y_len; j++) {
         for (int k = 0; k < q_num; k++) {
@@ -220,15 +223,15 @@ int main() {
      * explicit expressions given in Eq. 5.25, 5.27, and 5.28 in Krüger, rather than the general expression Eq. 5.26 in Krüger. Like with the "unrolled" expressions for rho, u_x, and u_y; this is not
      * done because implementing those expressions is particularly challenging.*/
     for (int i = 0; i < x_len; i++) {
-      // Bounce-back on the bottom plate
+      // Here, we apply the equilibrium bounce-back condition on the bottom plate.
       f_prop[i][0][2] = f_prop[i][0][4];
       f_prop[i][0][5] = f_prop[i][0][7];
       f_prop[i][0][6] = f_prop[i][0][8];
 
-      // Bounce-back on the top plate, with the wall motion
+      // Here, we apply the equilibrium bounce-back condition on the top plate, incorporating the wall motion.
       f_prop[i][y_len - 1][4] = f_prop[i][y_len - 1][2];
-      f_prop[i][y_len - 1][7] = f_prop[i][y_len - 1][5] + 2 * rho[i][y_len - 1] * w[7] * (cx_float[7] * u_wall_top)/cs_sq;
-      f_prop[i][y_len - 1][8] = f_prop[i][y_len - 1][6] + 2 * rho[i][y_len - 1] * w[8] * (cx_float[8] * u_wall_top)/cs_sq;
+      f_prop[i][y_len - 1][7] = f_prop[i][y_len - 1][5] + 2 * rho[i][y_len - 1] * w[7] * (cx_float[7] * u_wall_top) / cs_sq;
+      f_prop[i][y_len - 1][8] = f_prop[i][y_len - 1][6] + 2 * rho[i][y_len - 1] * w[8] * (cx_float[8] * u_wall_top) / cs_sq;
     }
 
 
