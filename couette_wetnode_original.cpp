@@ -1,4 +1,4 @@
-﻿/* As a first step, we use the lattice Boltzmann (LB) technique to simulate the problem of 2D Couette flow in rectangular coordinates. (This is the problem of viscous flow between two rectangular
+/* As a first step, we use the lattice Boltzmann (LB) technique to simulate the problem of 2D Couette flow in rectangular coordinates. (This is the problem of viscous flow between two rectangular
  * plates with no pressure drop, where the top wall moves at a given velocity and the bottom wall is stationary. We use no-slip boundary conditions at the walls, and assume a pressure gradient of
  * zero.) For a channel of length L and a top wall velocity of U0, the velocity is given by u = U0 * y / L.
  *
@@ -57,13 +57,11 @@ typedef std::vector<std::vector<std::vector<double>>> array3D_float;
  * of the TOTAL initial velocity; i.e. (ux_init)^2 + (uy_init)^2). Defining vel_init_sq just lets the initialisation be more comprehensible.*/
 int x_len = 40;                   // number of x grid points. System is periodic in x.
 int y_len = 20;                   // number of y grid points
-int t_steps = 10001;           // number of time steps. Since I update the densities and velocities at the beginning of the simulation, I'm doing one extra timestep.
+int t_steps = 10000001;           // number of time steps. Since I update the densities and velocities at the beginning of the simulation, I'm doing one extra timestep.
 double tau = 0.9;                 // BGK relaxation time
-double omega = 1.0/tau;           // BGK inverse relaxation time (lowercase omega, NOT capital omega)
+double omega = 1.0 / tau;           // BGK inverse relaxation time (lowercase omega, NOT capital omega)
 double rho_init = 1.0;            // initial density
-double cs = 1/3.0;              // speed of sound in lattice units
-double cs_sq = std::pow(cs, 2);   // speed of sound squared
-double cs_four = std::pow(cs, 4); // speed of sound to the fourth
+double cs_sq = 1.0 / 3.0;           // speed of sound squared in lattice units
 double u_wall_top = 0.1;          // top wall velocity
 double u_wall_bottom = 0.0;       // bottom wall velocity
 double ux_init = 0.0;             // global initial velocity in the x-direction
@@ -71,14 +69,16 @@ double uy_init = 0.0;             // global initial velocity in the y-direction
 
 double vel_init_sq = std::pow(ux_init, 2) + std::pow(uy_init, 2); // square of the magnitude of the initial velocity
 
-/* These are the lattice parameters. We define the x-direction and y-direction lattice speeds as both a float vector and an int vector. The float vector can go into an equation for the */
+/* These are the lattice parameters. We define the x-direction and y-direction lattice speeds as both a float vector and an int vector. The float vector goes into equations in which the lattice
+ * projections (the c_i's, i.e., the x-direction and y-direction lattice speeds) are used. (Usually, this involves expressions involving the dot product of u and c.) */
 int q_num = 9; // number of velocity directions (Q in DnQm). Here, Q = 9, with q = 0 as self-velocity.
 
-std::vector<float> w = {4.0/9.0, 1.0/9.0, 1.0/9.0, 1.0/9.0, 1.0/9.0, 1.0/36.0, 1.0/36.0, 1.0/36.0, 1.0/36.0}; // lattice weights
-std::vector<int> cx_int = {0, 1, 0, -1,  0, 1, -1, -1,  1};                       // x-direction lattice speeds
-std::vector<int> cy_int = {0, 0, 1,  0, -1, 1,  1, -1, -1};                       // y-direction lattice speeds
-std::vector<float> cx_float = {0.0, 1.0, 0.0, -1.0,  0.0, 1.0, -1.0, -1.0,  1.0}; // x-direction lattice speeds
-std::vector<float> cy_float = {0.0, 0.0, 1.0,  0.0, -1.0, 1.0,  1.0, -1.0, -1.0}; // y-direction lattice speeds
+std::vector<float> w = { 4.0 / 9.0, 1.0 / 9.0, 1.0 / 9.0, 1.0 / 9.0, 1.0 / 9.0, 1.0 / 36.0, 1.0 / 36.0, 1.0 / 36.0, 1.0 / 36.0 }; // lattice weights
+
+std::vector<int> cx_int = { 0, 1, 0, -1,  0, 1, -1, -1,  1 };                       // x-direction lattice speeds
+std::vector<int> cy_int = { 0, 0, 1,  0, -1, 1,  1, -1, -1 };                       // y-direction lattice speeds
+std::vector<float> cx_float = { 0.0, 1.0, 0.0, -1.0,  0.0, 1.0, -1.0, -1.0,  1.0 }; // x-direction lattice speeds
+std::vector<float> cy_float = { 0.0, 0.0, 1.0,  0.0, -1.0, 1.0,  1.0, -1.0, -1.0 }; // y-direction lattice speeds
 
  /* The lattice velocity directions above follow Krüger Pg. 86. These are defined by:
   *
@@ -92,18 +92,6 @@ std::vector<float> cy_float = {0.0, 0.0, 1.0,  0.0, -1.0, 1.0,  1.0, -1.0, -1.0}
   * 3-0-1   |
   *  /|\    --→ x
   * 7 4 8 */
-
-
-  ///* This creates the vector of nodes, which are offset from the "regular" grid by 1/2 in each direction. These will be used later, to implement the
-  //   half-way bounce-back conditions, when I understand how that works. */
-  //vect1D_float x_node(x_len);
-  //for (int i = 0; i < x_len + 1; i++) {
-  //  x_node[i] = i + 0.5;
-  //}
-  //vect1D_float y_node(y_len);
-  //for (int j = 0; j < y_len + 1; j++) {
-  //  y_node[j] = j + 0.5;
-  //}
 
 
 /* This defines the distribution function arrays. Since the distribution functions live in phase space, we have one f for each value of x, y, AND q; i.e., at each node, we have q_num different
