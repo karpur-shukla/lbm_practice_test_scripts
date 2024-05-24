@@ -1,4 +1,4 @@
-﻿/* As a first step, we use the lattice Boltzmann (LB) technique to simulate the problem of 2D Couette flow in rectangular coordinates. (This is the problem of viscous flow between two rectangular
+/* As a first step, we use the lattice Boltzmann (LB) technique to simulate the problem of 2D Couette flow in rectangular coordinates. (This is the problem of viscous flow between two rectangular
  * plates with no pressure drop, where the top wall moves at a given velocity and the bottom wall is stationary. We use no-slip boundary conditions at the walls, and assume a pressure gradient of
  * zero.) For a channel of length L and a top wall velocity of U0, the velocity is given by u = U0 * y / L.
  *
@@ -50,30 +50,30 @@ typedef std::vector<std::vector<std::vector<double>>> array3D_float;
 /* These are the simulation parameters, including some "extra" simulation parameters. Following the suggestion in Krüger Sec. 3.3.3.4 (Pgs. 69 - 70), I'm explicitly defining cs_sq and cs_four (speed
  * of sound squared and speed of sound to the fourth). Apparently, calling these is faster than calculating cs^2 and cs^4 in the loops. For the initialisation, I also define vel_init_sq (the square
  * of the TOTAL initial velocity; i.e. (ux_init)^2 + (uy_init)^2). Defining vel_init_sq just lets the initialisation be more comprehensible.*/
-int x_len = 40;                   // number of x grid points. System is periodic in x.
-int y_len = 20;                   // number of y grid points
-int t_steps = 10000001;           // number of time steps. Since I update the densities and velocities at the beginning of the simulation, I'm doing one extra timestep.
-double tau = 0.9;                 // BGK relaxation time
-double omega = 1.0/tau;           // BGK inverse relaxation time (lowercase omega, NOT capital omega)
-double rho_init = 1.0;            // initial density
-double cs_sq = 1.0/3.0;           // speed of sound squared in lattice units
-double u_wall_top = 0.1;          // top wall velocity
-double u_wall_bottom = 0.0;       // bottom wall velocity
-double ux_init = 0.0;             // global initial velocity in the x-direction
-double uy_init = 0.0;             // global initial velocity in the y-direction
+const int x_len = 40;                   // number of x grid points. System is periodic in x.
+const int y_len = 20;                   // number of y grid points
+const int t_steps = 10001;           // number of time steps. Since I update the densities and velocities at the beginning of the simulation, I'm doing one extra timestep.
+const double tau = 0.9;                 // BGK relaxation time
+const double omega = 1.0/tau;           // BGK inverse relaxation time (lowercase omega, NOT capital omega)
+const double rho_init = 1.0;            // initial density
+const double cs_sq = 1.0/3.0;           // speed of sound squared in lattice units
+const double u_wall_top = 0.1;          // top wall velocity
+const double u_wall_bottom = 0.0;       // bottom wall velocity
+const double ux_init = 0.0;             // global initial velocity in the x-direction
+const double uy_init = 0.0;             // global initial velocity in the y-direction
 
-double vel_init_sq = std::pow(ux_init, 2) + std::pow(uy_init, 2); // square of the magnitude of the initial velocity
+const double vel_init_sq = std::pow(ux_init, 2) + std::pow(uy_init, 2); // square of the magnitude of the initial velocity
 
 /* These are the lattice parameters. We define the x-direction and y-direction lattice speeds as both a float vector and an int vector. The float vector goes into equations in which the lattice
  * projections (the c_i's, i.e., the x-direction and y-direction lattice speeds) are used. (Usually, this involves expressions involving the dot product of u and c.) */
-int q_num = 9; // number of velocity directions (Q in DnQm). Here, Q = 9, with q = 0 as self-velocity.
+const int q_num = 9; // number of velocity directions (Q in DnQm). Here, Q = 9, with q = 0 as self-velocity.
 
-std::vector<float> w = {4.0/9.0, 1.0/9.0, 1.0/9.0, 1.0/9.0, 1.0/9.0, 1.0/36.0, 1.0/36.0, 1.0/36.0, 1.0/36.0}; // lattice weights
+const std::vector<float> w = {4.0/9.0, 1.0/9.0, 1.0/9.0, 1.0/9.0, 1.0/9.0, 1.0/36.0, 1.0/36.0, 1.0/36.0, 1.0/36.0}; // lattice weights
 
-std::vector<int> cx_int = {0, 1, 0, -1,  0, 1, -1, -1,  1};                       // x-direction lattice speeds
-std::vector<int> cy_int = {0, 0, 1,  0, -1, 1,  1, -1, -1};                       // y-direction lattice speeds
-std::vector<float> cx_float = {0.0, 1.0, 0.0, -1.0,  0.0, 1.0, -1.0, -1.0,  1.0}; // x-direction lattice speeds
-std::vector<float> cy_float = {0.0, 0.0, 1.0,  0.0, -1.0, 1.0,  1.0, -1.0, -1.0}; // y-direction lattice speeds
+const std::vector<int> cx_int = {0, 1, 0, -1,  0, 1, -1, -1,  1};                       // x-direction lattice speeds
+const std::vector<int> cy_int = {0, 0, 1,  0, -1, 1,  1, -1, -1};                       // y-direction lattice speeds
+const std::vector<float> cx_float = {0.0, 1.0, 0.0, -1.0,  0.0, 1.0, -1.0, -1.0,  1.0}; // x-direction lattice speeds
+const std::vector<float> cy_float = {0.0, 0.0, 1.0,  0.0, -1.0, 1.0,  1.0, -1.0, -1.0}; // y-direction lattice speeds
 
 /* The lattice velocity directions above follow Krüger Pg. 86. These are defined by:
  *
@@ -119,6 +119,8 @@ int main() {
    * in Krüger (Sec. 3.4.5). These can be further simplified to the equations given in the aforementioned section in Krüger (specifically, on Pg. 93, Eq. 3.65). */
   for (int i = 0; i < x_len; i++) {
     for (int j = 0; j < y_len; j++) {
+      vel_sq[i][j] = std::pow(ux[i][j], 2) + std::pow(uy[i][j], 2);
+
       f_eq[i][j][0] = (4.0/9.0) * rho[i][j] * (1.0 - (vel_sq[i][j] / (2 * cs_sq)));
       f_eq[i][j][1] = (1.0/9.0) * rho[i][j] * (1.0 + (ux[i][j]) / cs_sq + (std::pow(ux[i][j], 2)) / (2 * std::pow(cs_sq, 2)) - (vel_sq[i][j]) / (2 * cs_sq));
       f_eq[i][j][2] = (1.0/9.0) * rho[i][j] * (1.0 + (uy[i][j]) / cs_sq + (std::pow(uy[i][j], 2)) / (2 * std::pow(cs_sq, 2)) - (vel_sq[i][j]) / (2 * cs_sq));
@@ -224,9 +226,10 @@ int main() {
      * done because implementing those expressions is particularly challenging.*/
     for (int i = 0; i < x_len; i++) {
       // Here, we apply the equilibrium bounce-back condition on the bottom plate.
+
       f_prop[i][0][2] = f_prop[i][0][4];
-      f_prop[i][0][5] = f_prop[i][0][7];
-      f_prop[i][0][6] = f_prop[i][0][8];
+      f_prop[i][0][5] = f_prop[i][0][7] + 2 * rho[i][0] * w[5] * (cx_float[5] * u_wall_bottom) / cs_sq;
+      f_prop[i][0][6] = f_prop[i][0][8] + 2 * rho[i][0] * w[6] * (cx_float[6] * u_wall_bottom) / cs_sq;
 
       // Here, we apply the equilibrium bounce-back condition on the top plate, incorporating the wall motion.
       f_prop[i][y_len - 1][4] = f_prop[i][y_len - 1][2];
