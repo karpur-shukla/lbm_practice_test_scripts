@@ -52,12 +52,12 @@ typedef std::vector<std::vector<std::vector<double>>> array3D_float;
  * of the TOTAL initial velocity; i.e. (ux_init)^2 + (uy_init)^2). Defining vel_init_sq just lets the initialisation be more comprehensible. */
 const int x_len = 40;             // number of x grid points. System is periodic in x.
 const int y_len = 20;             // number of y grid points
-const int t_steps = 10001;     // number of time steps. Since I update the densities and velocities at the beginning of the simulation, I'm doing one extra timestep.
+const int t_steps = 10000001;     // number of time steps. Since I update the densities and velocities at the beginning of the simulation, I'm doing one extra timestep.
 const double tau = 0.9;           // BGK relaxation time
 const double omega = 1.0/tau;     // BGK inverse relaxation time (lowercase omega, NOT capital omega)
 const double rho_init = 1.0;      // initial density
 const double cs_sq = 1.0/3.0;     // speed of sound squared in lattice units
-const double u_wall_top = 0.1;    // top wall velocity
+const double u_wall_top = 1.0;    // top wall velocity
 const double u_wall_bottom = 0.0; // bottom wall velocity
 const double ux_init = 0.0;       // global initial velocity in the x-direction
 const double uy_init = 0.0;       // global initial velocity in the y-direction
@@ -66,7 +66,7 @@ const double vel_init_sq = std::pow(ux_init, 2) + std::pow(uy_init, 2); // squar
 
 /* These are the lattice parameters. We define the x-direction and y-direction lattice speeds as both a float vector and an int vector. The float vector goes into equations in which the lattice
  * projections (the c_i's, i.e., the x-direction and y-direction lattice speeds) are used. (Usually, this involves expressions involving the dot product of u and c.) */
-const int q_num = 9; // number of velocity directions (Q in DnQm). Here, Q = 9, with q = 0 as self-velocity.
+const int q_num = 9; // number of velocity directions (Q in DnQm). Here, Q = 9, with q = 0 as the self-velocity.
 
 const std::vector<double> w = {4.0/9.0, 1.0/9.0, 1.0/9.0, 1.0/9.0, 1.0/9.0, 1.0/36.0, 1.0/36.0, 1.0/36.0, 1.0/36.0}; // lattice weights
 
@@ -120,8 +120,8 @@ void compute_macroscopic_params(array3D_float prev_dist_fn, array2D_float &rho, 
     for (int j = 0; j < y_size; j++) {
       rho[i][j] = prev_dist_fn[i][j][0] + prev_dist_fn[i][j][1] + prev_dist_fn[i][j][2] + prev_dist_fn[i][j][3] + prev_dist_fn[i][j][4]
                                                                 + prev_dist_fn[i][j][5] + prev_dist_fn[i][j][6] + prev_dist_fn[i][j][7] + prev_dist_fn[i][j][8];
-      ux[i][j] = (prev_dist_fn[i][j][1] + prev_dist_fn[i][j][5] + prev_dist_fn[i][j][8] - prev_dist_fn[i][j][3] - prev_dist_fn[i][j][6] - prev_dist_fn[i][j][7]) / rho[i][j];
-      uy[i][j] = (prev_dist_fn[i][j][2] + prev_dist_fn[i][j][5] + prev_dist_fn[i][j][6] - prev_dist_fn[i][j][4] - prev_dist_fn[i][j][7] - prev_dist_fn[i][j][8]) / rho[i][j];
+      ux[i][j] = (prev_dist_fn[i][j][1] + prev_dist_fn[i][j][5] + prev_dist_fn[i][j][8] - prev_dist_fn[i][j][3] - prev_dist_fn[i][j][6] - prev_dist_fn[i][j][7])/rho[i][j];
+      uy[i][j] = (prev_dist_fn[i][j][2] + prev_dist_fn[i][j][5] + prev_dist_fn[i][j][6] - prev_dist_fn[i][j][4] - prev_dist_fn[i][j][7] - prev_dist_fn[i][j][8])/rho[i][j];
 
 //      Note that to use this loop, we need to add four extra arguments to this function: vect1D_float vel_weight = w, vect1D_float &c_x_dir = cx_float, vect1D_float &c_y_dir = cy_float, and
 //      array3D_float &u_dot_ci.
@@ -152,23 +152,23 @@ void compute_f_eq(const double sound_speed_sq, array3D_float &f_eq, array2D_floa
     for (int j = 0; j < y_num; j++) {
       vel_sq[i][j] = std::pow(x_vel[i][j], 2) + std::pow(y_vel[i][j], 2);
 
-      f_eq[i][j][0] = (4.0/9.0) * dens[i][j] * (1.0 - (vel_sq[i][j]/ (2.0 * sound_speed_sq)));
-      f_eq[i][j][1] = (1.0/9.0) * dens[i][j] * (1.0 + (x_vel[i][j]) / sound_speed_sq + (std::pow(x_vel[i][j], 2)) / (2 * std::pow(sound_speed_sq, 2)) - (vel_sq[i][j]) / (2 * sound_speed_sq));
-      f_eq[i][j][2] = (1.0/9.0) * dens[i][j] * (1.0 + (y_vel[i][j]) / sound_speed_sq + (std::pow(y_vel[i][j], 2)) / (2 * std::pow(sound_speed_sq, 2)) - (vel_sq[i][j]) / (2 * sound_speed_sq));
-      f_eq[i][j][3] = (1.0/9.0) * dens[i][j] * (1.0 - (x_vel[i][j]) / sound_speed_sq + (std::pow(x_vel[i][j], 2)) / (2 * std::pow(sound_speed_sq, 2)) - (vel_sq[i][j]) / (2 * sound_speed_sq));
-      f_eq[i][j][4] = (1.0/9.0) * dens[i][j] * (1.0 - (y_vel[i][j]) / sound_speed_sq + (std::pow(y_vel[i][j], 2)) / (2 * std::pow(sound_speed_sq, 2)) - (vel_sq[i][j]) / (2 * sound_speed_sq));
-      f_eq[i][j][5] = (1.0/36.0) * dens[i][j] * (1.0 + (x_vel[i][j] + y_vel[i][j]) / sound_speed_sq + (x_vel[i][j] * y_vel[i][j]) / (std::pow(sound_speed_sq, 2)) + (vel_sq[i][j]) / sound_speed_sq);
-      f_eq[i][j][6] = (1.0/36.0) * dens[i][j] * (1.0 - (x_vel[i][j] - y_vel[i][j]) / sound_speed_sq - (x_vel[i][j] * y_vel[i][j]) / (std::pow(sound_speed_sq, 2)) + (vel_sq[i][j]) / sound_speed_sq);
-      f_eq[i][j][7] = (1.0/36.0) * dens[i][j] * (1.0 - (x_vel[i][j] + y_vel[i][j]) / sound_speed_sq + (x_vel[i][j] * y_vel[i][j]) / (std::pow(sound_speed_sq, 2)) + (vel_sq[i][j]) / sound_speed_sq);
-      f_eq[i][j][8] = (1.0/36.0) * dens[i][j] * (1.0 + (x_vel[i][j] - y_vel[i][j]) / sound_speed_sq - (x_vel[i][j] * y_vel[i][j]) / (std::pow(sound_speed_sq, 2)) + (vel_sq[i][j]) / sound_speed_sq);
+      f_eq[i][j][0] = (4.0/9.0) * dens[i][j] * (1.0 - (vel_sq[i][j]/(2.0 * sound_speed_sq)));
+      f_eq[i][j][1] = (1.0/9.0) * dens[i][j] * (1.0 + (x_vel[i][j])/sound_speed_sq + (std::pow(x_vel[i][j], 2))/(2.0 * std::pow(sound_speed_sq, 2)) - (vel_sq[i][j])/(2.0 * sound_speed_sq));
+      f_eq[i][j][2] = (1.0/9.0) * dens[i][j] * (1.0 + (y_vel[i][j])/sound_speed_sq + (std::pow(y_vel[i][j], 2))/(2.0 * std::pow(sound_speed_sq, 2)) - (vel_sq[i][j])/(2.0 * sound_speed_sq));
+      f_eq[i][j][3] = (1.0/9.0) * dens[i][j] * (1.0 - (x_vel[i][j])/sound_speed_sq + (std::pow(x_vel[i][j], 2))/(2.0 * std::pow(sound_speed_sq, 2)) - (vel_sq[i][j])/(2.0 * sound_speed_sq));
+      f_eq[i][j][4] = (1.0/9.0) * dens[i][j] * (1.0 - (y_vel[i][j])/sound_speed_sq + (std::pow(y_vel[i][j], 2))/(2.0 * std::pow(sound_speed_sq, 2)) - (vel_sq[i][j])/(2.0 * sound_speed_sq));
+      f_eq[i][j][5] = (1.0/36.0) * dens[i][j] * (1.0 + (x_vel[i][j] + y_vel[i][j])/sound_speed_sq + (x_vel[i][j] * y_vel[i][j])/(std::pow(sound_speed_sq, 2)) + (vel_sq[i][j])/sound_speed_sq);
+      f_eq[i][j][6] = (1.0/36.0) * dens[i][j] * (1.0 - (x_vel[i][j] - y_vel[i][j])/sound_speed_sq - (x_vel[i][j] * y_vel[i][j])/(std::pow(sound_speed_sq, 2)) + (vel_sq[i][j])/sound_speed_sq);
+      f_eq[i][j][7] = (1.0/36.0) * dens[i][j] * (1.0 - (x_vel[i][j] + y_vel[i][j])/sound_speed_sq + (x_vel[i][j] * y_vel[i][j])/(std::pow(sound_speed_sq, 2)) + (vel_sq[i][j])/sound_speed_sq);
+      f_eq[i][j][8] = (1.0/36.0) * dens[i][j] * (1.0 + (x_vel[i][j] - y_vel[i][j])/sound_speed_sq - (x_vel[i][j] * y_vel[i][j])/(std::pow(sound_speed_sq, 2)) + (vel_sq[i][j])/sound_speed_sq);
 
-//      Note that to use this loop, we need to add four extra arguments to this function: vect1D_float weight = w, vect1D_float &c_x_dir = cx_float, vect1D_float &c_y_dir = cy_float, and
-//      array3D_float &u_dot_ci.
-//        q_len = weight.size();
-//        for (int k = 0; k < q_len; k++) {
-//          u_dot_ci[i][j][k] = (x_vel[i][j] * cx_float[k] + y_vel[i][j] * cy_float[k]);
-//          f_eq[i][j][k] = weight[k] * dens[i][j] * (1 + u_dot_ci[i][j][k] / sound_speed_sq + std::pow(u_dot_ci[i][j][k], 2) / (2 * std::pow(sound_speed_sq, 2)) - vel_sq[i][j] / (2 * sound_speed_sq));
-//        }
+      //Note that to use this loop, we need to add four extra arguments to this function: vect1D_float weight = w, vect1D_float &c_x_dir = cx_float, vect1D_float &c_y_dir = cy_float, and
+      //array3D_float &u_dot_ci.
+      //  q_len = weight.size();
+      //  for (int k = 0; k < q_len; k++) {
+      //    u_dot_ci[i][j][k] = (x_vel[i][j] * cx_float[k] + y_vel[i][j] * cy_float[k]);
+      //    f_eq[i][j][k] = weight[k] * dens[i][j] * (1 + u_dot_ci[i][j][k] / sound_speed_sq + std::pow(u_dot_ci[i][j][k], 2) / (2 * std::pow(sound_speed_sq, 2)) - vel_sq[i][j] / (2 * sound_speed_sq));
+      //  }
     }
   }
 }
@@ -191,10 +191,9 @@ void collision(array3D_float &f_coll, array3D_float previously_propagated_dist_f
 }
 
 /* Here, we perform the streaming step, without applying the boundary condition at the walls, but with applying periodicity. The boundary condition at the wall shifts everything over, and this will
- * be applied in a different function. We note that this is fine, since we impose the boundary conditions at the correct step. This follows the series of steps given in the lid-driven cavity script
- * written by Adriano Sciacovelli and in the compilation by Jonas Lätt, given at https://web.archive.org/web/20080616222518/http://www.lbmethod.org/_media/numerics:cavity.m. The specific series of
- * steps is given below (in the main timestep part). A discussion of applying periodic boundary conditions everywhere is given at the Palabos forum post at
- * https://palabos-forum.unige.ch/t/circshift-in-cavity-m/685 (mirrored at https://web.archive.org/web/20230402015817/https://palabos-forum.unige.ch/t/circshift-in-cavity-m/685). */
+ * be applied in a different function. We note that this is fine, since we can impose the boundary conditions at a different step. A discussion of applying periodic boundary conditions everywhere is
+ * given at the Palabos forum post at https://palabos-forum.unige.ch/t/circshift-in-cavity-m/685 (mirrored at
+ * https://web.archive.org/web/20230402015817/https://palabos-forum.unige.ch/t/circshift-in-cavity-m/685). */
 void streaming_periodic_x_and_y(std::vector<int> discrete_x_vel, std::vector<int> discrete_y_vel, array3D_float &f_prop, array3D_float current_coll_dist_fn) {
   int new_x;
   int new_y;
@@ -231,14 +230,14 @@ void macroscopic_BCs_rectangular_channel(array2D_float &rho, array2D_float &ux, 
 
   for (int i = 0; i < x_amt; i++) {
     // Here, we apply the boundary conditions for the bottom wall: continuity, no-slip (ux[i][0] = u_wall_bottom), and no-penetration (uy[i][0] = 0.0).
-    rho[i][0] = (1.0 / (1.0 - uy[i][0])) *
+    rho[i][0] = (1.0/(1.0 - uy[i][0])) *
            (propagated_dist_fn[i][0][0] + propagated_dist_fn[i][0][1] + propagated_dist_fn[i][0][3] + 2.0 * (propagated_dist_fn[i][0][4] + propagated_dist_fn[i][0][7] + propagated_dist_fn[i][0][8]));
     ux[i][0] = bottom_wall_vel;
     uy[i][0] = 0.0;
 
     // Here, we apply the boundary conditions for the top wall: continuity, no-slip (ux[i][0] = u_wall_top), and no-penetration (uy[i][0] = 0.0).
-    rho[i][y_amt - 1] = (1.0 / (1.0 + uy[i][y_amt - 1])) * (propagated_dist_fn[i][y_amt - 1][0] + propagated_dist_fn[i][y_amt - 1][1] + propagated_dist_fn[i][y_amt - 1][3]
-                                                         + 2.0 * (propagated_dist_fn[i][y_amt - 1][2] + propagated_dist_fn[i][y_amt - 1][5] + propagated_dist_fn[i][y_amt - 1][6]));
+    rho[i][y_amt - 1] = (1.0/(1.0 + uy[i][y_amt - 1])) * (propagated_dist_fn[i][y_amt - 1][0] + propagated_dist_fn[i][y_amt - 1][1] + propagated_dist_fn[i][y_amt - 1][3]
+                                                       + 2.0 * (propagated_dist_fn[i][y_amt - 1][2] + propagated_dist_fn[i][y_amt - 1][5] + propagated_dist_fn[i][y_amt - 1][6]));
     ux[i][y_amt - 1] = top_wall_vel;
     uy[i][y_amt - 1] = 0.0;
   }
@@ -257,13 +256,13 @@ void equil_BB_rectangular_channel(const double bottom_wall_velocity, const doubl
   for (int i = 0; i < x_amount; i++) {
     // Here, we apply the equilibrium bounce-back condition on the bottom plate.
     f_prop[i][0][2] = f_prop[i][0][4];
-    f_prop[i][0][5] = f_prop[i][0][7] + 2 * fluid_density[i][0] * vel_weight[5] * (x_dir_lattice_vel[5] * bottom_wall_velocity) / speed_sound_sq;
-    f_prop[i][0][6] = f_prop[i][0][8] + 2 * fluid_density[i][0] * vel_weight[6] * (x_dir_lattice_vel[6] * bottom_wall_velocity) / speed_sound_sq;
+    f_prop[i][0][5] = f_prop[i][0][7] + 2.0 * fluid_density[i][0] * vel_weight[5] * (x_dir_lattice_vel[5] * bottom_wall_velocity)/speed_sound_sq;
+    f_prop[i][0][6] = f_prop[i][0][8] + 2.0 * fluid_density[i][0] * vel_weight[6] * (x_dir_lattice_vel[6] * bottom_wall_velocity)/speed_sound_sq;
 
     // Here, we apply the equilibrium bounce-back condition on the top plate, incorporating the wall motion.
     f_prop[i][y_amount - 1][4] = f_prop[i][y_amount - 1][2];
-    f_prop[i][y_amount - 1][7] = f_prop[i][y_amount - 1][5] + 2 * fluid_density[i][y_amount - 1] * vel_weight[7] * (x_dir_lattice_vel[7] * top_wall_velocity) / speed_sound_sq;
-    f_prop[i][y_amount - 1][8] = f_prop[i][y_amount - 1][6] + 2 * fluid_density[i][y_amount - 1] * vel_weight[8] * (x_dir_lattice_vel[8] * top_wall_velocity) / speed_sound_sq;
+    f_prop[i][y_amount - 1][7] = f_prop[i][y_amount - 1][5] + 2.0 * fluid_density[i][y_amount - 1] * vel_weight[7] * (x_dir_lattice_vel[7] * top_wall_velocity)/speed_sound_sq;
+    f_prop[i][y_amount - 1][8] = f_prop[i][y_amount - 1][6] + 2.0 * fluid_density[i][y_amount - 1] * vel_weight[8] * (x_dir_lattice_vel[8] * top_wall_velocity)/speed_sound_sq;
   }
 }
 
@@ -286,8 +285,8 @@ void NEEM_rectangular_channel(vect1D_float c_x_dir, vect1D_float c_y_dir, array2
     for (int k = 0; k < q_qty; k++) {
       u_dot_ci[i][0][k] = (x_speed[i][0] * c_x_dir[k] + y_speed[i][0] * c_y_dir[k]);
       u_dot_ci[i][y_qty - 1][k] = (x_speed[i][y_qty - 1] * c_x_dir[k] + y_speed[i][y_qty - 1] * c_y_dir[k]);
-      f_prop[i][0][k] = weight[k] * (density[i][0] + u_dot_ci[i][0][k] / speed_of_sound_squared) + (f_prop[i][1][k] - equil_dist_fn[i][1][k]);
-      f_prop[i][y_qty - 1][k] = weight[k] * (density[i][y_qty - 1] + u_dot_ci[i][y_qty - 1][k] / speed_of_sound_squared) + (f_prop[i][y_qty - 2][k] - equil_dist_fn[i][y_qty - 2][k]);
+      f_prop[i][0][k] = weight[k] * (density[i][0] + u_dot_ci[i][0][k]/speed_of_sound_squared) + (f_prop[i][1][k] - equil_dist_fn[i][1][k]);
+      f_prop[i][y_qty - 1][k] = weight[k] * (density[i][y_qty - 1] + u_dot_ci[i][y_qty - 1][k]/speed_of_sound_squared) + (f_prop[i][y_qty - 2][k] - equil_dist_fn[i][y_qty - 2][k]);
     }
   }
 }
@@ -305,7 +304,6 @@ void Zou_He_rectangular_channel(array2D_float x_dir_velocity, array2D_float y_di
   int y_dir_size = f_prop[0].size();
 
   for (int i = 0; i < x_dir_size; i++) {
-
     /* Here, we incorporate the Zou-He (nonequilibrium bounce back) method, discussed in Krüger Sec. 5.3.4.4, Pgs. 196-199, Eq. 5.42-5.48. This first applies the ZH boundary conditions on the
      * bottom plate. */
     f_prop[i][0][2] = f_prop[i][0][4] + (2.0 * fluid_dens[i][0] * y_dir_velocity[i][0])/3.0;
@@ -322,8 +320,7 @@ void Zou_He_rectangular_channel(array2D_float x_dir_velocity, array2D_float y_di
   }
 }
 
-/* Here, we define the function that prints a rank-2 matrix. For now, this will simply be a function that relies on the input x-length and y-length; however, I intend to turn this into a function
- * that prints *any* rank-2 matrix, regardless of shape or contents (i.e., it can print array2D_floats, std::vector<std::vector<int>>s, etc.), and without knowing the dimension ahead of time. */
+/* Here, we define the function that prints a rank-2 matrix. */
 void print_2D_array(array2D_float input_mat) {
   int num_cols = input_mat.size();
   int num_rows = input_mat[0].size();
@@ -337,22 +334,13 @@ void print_2D_array(array2D_float input_mat) {
   }
 }
 
-//template <typename T> print_2D_array(std::vector<std::vector<T>> input_2D_arr) {
-//  int num_rows = input_2D_arr.size();
-//  for (auto &i : input_2D_arr) {
-//    std::cout << "[";
-//    for (auto &j : i) {
-//      std::cout << j << " ";
-//    }
-//    std::cout << input_2D_arr[i][num_rows - 1] << "]" << std::endl;
-//  }
-//}
 
 
 ////////// THE MAIN SIMULATION LOOP STARTS HERE //////////
+
 int main() {
 
-  ////////// THE INITIALISATION iS HERE //////////
+  ////////// THE INITIALISATION STARTS HERE //////////
 
   /* Here, we initialise the equilibrium distribution function f_eq, as well as the distribution functions used in the collision step (f_coll) and the streaming step (f_prop). The process of
    * initialising the equilibrium distribution function is the same as the process of updating it at each timestep, using properly initialised expressions for the density and x- and y-velocity
@@ -363,19 +351,33 @@ int main() {
   f_prop = f_eq;
 
 
+
   ////////// THE MAIN SIMULATION LOOP STARTS HERE //////////
 
-  /* Here, we perform the main simulation loop. We follow the structure of the MATLAB script for the lid-driven cavity problem (cavity.m), written by Adriano Sciacovelli and packaged in Jonas Lätt's
-   * compilation of LBM script examples. This script is mirrored at https://web.archive.org/web/20080616222518/http://www.lbmethod.org/_media/numerics:cavity.m.
-   
-   * In particular, we use the structure of calculating the macroscopic parameters -> imposing the macroscopic boundary conditions -> imposing the nonequilibrium boundary conditions -> colliding ->
-   * imposing the first-order boundary conditions -> streaming -> repeat. This is discussed in detail in the Palabos forum post https://palabos-forum.unige.ch/t/lid-cavity-flow/31, mirrored at
-   * https://web.archive.org/web/20230402025710/https://palabos-forum.unige.ch/t/lid-cavity-flow/31. We note Jonas Lätt's comment: "Be aware of the fact that Zou/He boundary nodes need to execute a
-   * normal BGK collision. I know that many people get this point wrong, and I therefore emphasize this once more: *Zou/He boundary nodes are required to execute a normal BGK collision step!* In your
-   * code, this simply means that implementation of Zou/He should come before collision [...]". */
+  /* Here, we perform the main simulation loop. Here, we follow the structure of the MATLAB script for Couette flow (couette_wetnode.m), written by Goncalo Silva as part of the code set accompanying
+   * the Krüger textbook. This script is located at https://github.com/lbm-principles-practice/code/blob/master/chapter5/couette_wetnode.m. In particular, we use the order in that script of the
+   * functions used, given by:
+   * 
+   *            calculating macroscopic parameters -> imposing macroscopic BCs -> computing f_eq and colliding -> streaming -> imposing 1st order BCs -> imposing noneq BCs -> repeat
+   * 
+   * This is the order used in the MATLAB scripts for Couette and Poiseuille flow (poiseuille_wetnode.m) written by Goncalo Silva accompanying the Krüger textbook, but we note that the MATLAB script
+   * for the lid-driven cavity problem (cavity.m), written by Adriano Sciacovelli and packaged in Jonas Lätt's compilation of LBM script examples, provides a different order of functions used:
+   *
+   *            calculating macroscopic parameters -> imposing macroscopic BCs -> imposing noneq BCs -> computing f_eq and colliding -> imposing 1st order BCs -> streaming -> repeat
+   *
+   * cavity.m is mirrored at https://web.archive.org/web/20080616222518/http://www.lbmethod.org/_media/numerics:cavity.m. The order of operations used in cavity.m is discussed in detail in the
+   * Palabos forum post https://palabos-forum.unige.ch/t/lid-cavity-flow/31, mirrored at https://web.archive.org/web/20230402025710/https://palabos-forum.unige.ch/t/lid-cavity-flow/31. Specifically,
+   * I took note of Jonas Lätt's comment: "Be aware of the fact that Zou/He boundary nodes need to execute a normal BGK collision. I know that many people get this point wrong, and I therefore
+   * emphasize this once more: *Zou/He boundary nodes are required to execute a normal BGK collision step!* [emphasis original] In your code, this simply means that implementation of Zou/He should
+   * come before collision [...]". 
+   *
+   * The order of operations used in cavity.m is NOT the order of operations used in couette_wetnode.m. We note that the order of operations used in couette_wetnode.m (preferred by Krüger and Silva,
+   * which is followed here) gives an accurate result for the Couette flow problem; which is not the case for the order of operations used in cavity.m (preferred by Sciacovelli and Lätt, which is not
+   * done here but gives an accurate result for the cavity problem. */
+
   for (int t = 0; t < t_steps; t++) {
 
-    // Here, we compute the macroscopic quantities (density and the velocity fields) at each time step. This uses the compute_macroscopic_params function defined on line 115.
+    /* Here, we compute the macroscopic quantities (density and the velocity fields) at each time step. This uses the compute_macroscopic_params function defined on line 115. */
     compute_macroscopic_params(f_prop, rho, ux, uy);
 
 
@@ -385,13 +387,13 @@ int main() {
      * We note that the macroscopic boundary conditions need to be defined *per the specific problem*, since we need to satisfy this per the *given* geometry and boundary conditions. Thus, we can't
      * define a *general* function to impose the macroscopic boundary conditions (unless we're doing something fancy like recreating Palabos); instead, we need to define this function *per problem*.
      * However, we note that since the macroscopic BCs are defined in terms of the bottom and top wall velocities, these BCs hold for *all* rectangular channel problems. This uses the
-     * macroscopic_BCs_rectangular_channel function defined on line 228.*/
+     * macroscopic_BCs_rectangular_channel function defined on line 227. */
     macroscopic_BCs_rectangular_channel(rho, ux, uy, f_prop, u_wall_bottom, u_wall_top);
 
 
     /* Here, we compute the equilibrium distribution at the given timestep. As before, this explicitly unrolls the loop over momentum space in the calculation of the distribution functions, by
      * expanding Eq. 3.54 (Pg. 82) in Krüger (Sec. 3.4.5). These can, as always, be further simplified to the equations given in Eq. 3.65 (Pg. 93) in Krüger. This uses the compute_f_eq function
-     * defined on line 147.*/
+     * defined on line 147. */
     compute_f_eq(cs_sq, f_eq, rho, ux, uy, vel_sq);
 
 
@@ -399,6 +401,11 @@ int main() {
      * distribution functions (f_coll and f_prop respectively here, f_i and f_i^* in Krüger Ch. 4) swap places (during the collision step) and then swap places again (during the streaming step.)
      * Here, we collide (update f_coll). We will then stream (update f_prop) and then apply boundary conditions to f_prop. This uses the collision function defined on line 179. */
     collision(f_coll, f_prop, f_eq, tau);
+
+
+    /* Here, we perform the streaming step, without applying the boundary condition at the wall, but with applying the periodic boundary conditions. The boundary condition at the wall shifts
+     * everything over, and this will be applied momentarily. This uses the streaming_periodic_x_and_y function defined on line 197. */
+    streaming_periodic_x_and_y(cx_int, cy_int, f_prop, f_coll);
 
 
     /* Here, we apply the equilibrium bounce-back conditions on the top and the bottom. As mentioned in the explanation for the main simulation loop (lines 364-371), we need to impose these even
@@ -417,43 +424,25 @@ int main() {
      * defined on line 303). Both are presented here, and since Couette flow has a linear profile, they both give the same results (and the same results as the first-order boundary conditions). My
      * personal preference is for the Zou-He method, both because it's the most intuitive to me, and because it's the most accurate amongst the three boundary condition types (equilibrium, NEEM,
      * ZH). */
-     //    NEEM_rectangular_channel(cx_float, cy_float, ux, uy, cs_sq, rho, w, f_eq, f_prop, u_dot_ci);
+    // NEEM_rectangular_channel(cx_float, cy_float, ux, uy, cs_sq, rho, w, f_eq, f_prop, u_dot_ci);
     Zou_He_rectangular_channel(ux, uy, rho, f_prop);
 
 
-    /* Here, we perform the streaming step, without applying the boundary condition at the wall, but with applying the periodic boundary conditions. The boundary condition at the wall shifts
-     * everything over, and this will be applied momentarily. This uses the streaming_periodic_x_and_y function defined on line 198. */
-    streaming_periodic_x_and_y(cx_int, cy_int, f_prop, f_coll);
-
-
+    /* Following the logic of cavity.m rather than couette_wetnode.m, the streaming step would be here instead of on line 417. */
   }
 
 
   /* Here, we output the velocities and the densities, to test against the analytic solution. The problem has infinite symmetry in the x-direction, and the velocity depends *only* on the profile in
    * the y-direction. In particular, the analytic solution should be ux = ux(y) = ux_init * y / y_len (where y is a variable), uy = 0, and rho = 1 (since this is an incompressible problem). This uses
    * the print_2D_array function defined on line 327. */
-  // Outputting velocity in the x-direction.
+  // This outputs the velocity in the x-direction.
   print_2D_array(ux);
 
   std::cout << std::endl;
   std::cout << std::endl;
   std::cout << std::endl;
 
-  // Outputting velocity in the y-direction.
-  print_2D_array(uy);
-
-  std::cout << std::endl;
-  std::cout << std::endl;
-  std::cout << std::endl;
-
-  // Outputting density.
+  // This outputs the density.
   print_2D_array(rho);
-
-  std::cout << std::endl;
-  std::cout << std::endl;
-  std::cout << std::endl;
-
-  // Outputting the velocity squared.
-  print_2D_array(vel_sq);
 
 }
