@@ -50,30 +50,30 @@ typedef std::vector<std::vector<std::vector<double>>> array3D_float;
 /* These are the simulation parameters, including some "extra" simulation parameters. Following the suggestion in Krüger Sec. 3.3.3.4 (Pgs. 69 - 70), I'm explicitly defining cs_sq and cs_four (speed
  * of sound squared and speed of sound to the fourth). Apparently, calling these is faster than calculating cs^2 and cs^4 in the loops. For the initialisation, I also define vel_init_sq (the square
  * of the TOTAL initial velocity; i.e. (ux_init)^2 + (uy_init)^2). Defining vel_init_sq just lets the initialisation be more comprehensible.*/
-int x_len = 40;                   // number of x grid points. System is periodic in x.
-int y_len = 20;                   // number of y grid points
-int t_steps = 10001;           // number of time steps. Since I update the densities and velocities at the beginning of the simulation, I'm doing one extra timestep.
-double tau = 1;                 // BGK relaxation time
-double omega = 1.0/tau;           // BGK inverse relaxation time (lowercase omega, NOT capital omega)
-double rho_init = 1.0;            // initial density
-double cs_sq = 1.0/3.0;           // speed of sound squared in lattice units
-double u_wall_top = 0.1;          // top wall velocity
-double u_wall_bottom = 0.0;       // bottom wall velocity
-double ux_init = 0.0;             // global initial velocity in the x-direction
-double uy_init = 0.0;             // global initial velocity in the y-direction
+const int x_len = 40;                   // number of x grid points. System is periodic in x.
+const int y_len = 20;                   // number of y grid points
+const int t_steps = 10001;           // number of time steps. Since I update the densities and velocities at the beginning of the simulation, I'm doing one extra timestep.
+const double tau = 0.9;                 // BGK relaxation time
+const double omega = 1.0/tau;           // BGK inverse relaxation time (lowercase omega, NOT capital omega)
+const double rho_init = 1.0;            // initial density
+const double cs_sq = 1.0/3.0;           // speed of sound squared in lattice units
+const double u_wall_top = 0.1;          // top wall velocity
+const double u_wall_bottom = 0.0;       // bottom wall velocity
+const double ux_init = 0.0;             // global initial velocity in the x-direction
+const double uy_init = 0.0;             // global initial velocity in the y-direction
 
-double vel_init_sq = std::pow(ux_init, 2) + std::pow(uy_init, 2); // square of the magnitude of the initial velocity
+const double vel_init_sq = std::pow(ux_init, 2) + std::pow(uy_init, 2); // square of the magnitude of the initial velocity
 
 /* These are the lattice parameters. We define the x-direction and y-direction lattice speeds as both a float vector and an int vector. The float vector goes into equations in which the lattice
  * projections (the c_i's, i.e., the x-direction and y-direction lattice speeds) are used. (Usually, this involves expressions involving the dot product of u and c.) */
-int q_num = 9; // number of velocity directions (Q in DnQm). Here, Q = 9, with q = 0 as self-velocity.
+const int q_num = 9; // number of velocity directions (Q in DnQm). Here, Q = 9, with q = 0 as self-velocity.
 
-std::vector<float> w = {4.0/9.0, 1.0/9.0, 1.0/9.0, 1.0/9.0, 1.0/9.0, 1.0/36.0, 1.0/36.0, 1.0/36.0, 1.0/36.0}; // lattice weights
+const std::vector<float> w = {4.0/9.0, 1.0/9.0, 1.0/9.0, 1.0/9.0, 1.0/9.0, 1.0/36.0, 1.0/36.0, 1.0/36.0, 1.0/36.0}; // lattice weights
 
-std::vector<int> cx_int = {0, 1, 0, -1,  0, 1, -1, -1,  1};                       // x-direction lattice speeds
-std::vector<int> cy_int = {0, 0, 1,  0, -1, 1,  1, -1, -1};                       // y-direction lattice speeds
-std::vector<float> cx_float = {0.0, 1.0, 0.0, -1.0,  0.0, 1.0, -1.0, -1.0,  1.0}; // x-direction lattice speeds
-std::vector<float> cy_float = {0.0, 0.0, 1.0,  0.0, -1.0, 1.0,  1.0, -1.0, -1.0}; // y-direction lattice speeds
+const std::vector<int> cx_int = {0, 1, 0, -1,  0, 1, -1, -1,  1};                       // x-direction lattice speeds
+const std::vector<int> cy_int = {0, 0, 1,  0, -1, 1,  1, -1, -1};                       // y-direction lattice speeds
+const std::vector<float> cx_float = {0.0, 1.0, 0.0, -1.0,  0.0, 1.0, -1.0, -1.0,  1.0}; // x-direction lattice speeds
+const std::vector<float> cy_float = {0.0, 0.0, 1.0,  0.0, -1.0, 1.0,  1.0, -1.0, -1.0}; // y-direction lattice speeds
 
 /* The lattice velocity directions above follow Krüger Pg. 86. These are defined by:
  *
@@ -119,6 +119,8 @@ int main() {
    * in Krüger (Sec. 3.4.5). These can be further simplified to the equations given in the aforementioned section in Krüger (specifically, on Pg. 93, Eq. 3.65). */
   for (int i = 0; i < x_len; i++) {
     for (int j = 0; j < y_len; j++) {
+      vel_sq[i][j] = std::pow(ux[i][j], 2) + std::pow(uy[i][j], 2);
+
       f_eq[i][j][0] = (4.0/9.0) * rho[i][j] * (1.0 - (vel_sq[i][j] / (2 * cs_sq)));
       f_eq[i][j][1] = (1.0/9.0) * rho[i][j] * (1.0 + (ux[i][j]) / cs_sq + (std::pow(ux[i][j], 2)) / (2 * std::pow(cs_sq, 2)) - (vel_sq[i][j]) / (2 * cs_sq));
       f_eq[i][j][2] = (1.0/9.0) * rho[i][j] * (1.0 + (uy[i][j]) / cs_sq + (std::pow(uy[i][j], 2)) / (2 * std::pow(cs_sq, 2)) - (vel_sq[i][j]) / (2 * cs_sq));
@@ -149,6 +151,14 @@ int main() {
         rho[i][j] = f_prop[i][j][0] + f_prop[i][j][1] + f_prop[i][j][2] + f_prop[i][j][3] + f_prop[i][j][4] + f_prop[i][j][5] + f_prop[i][j][6] + f_prop[i][j][7] + f_prop[i][j][8];
         ux[i][j] = (f_prop[i][j][1] + f_prop[i][j][5] + f_prop[i][j][8] - f_prop[i][j][3] - f_prop[i][j][6] - f_prop[i][j][7]) / rho[i][j];
         uy[i][j] = (f_prop[i][j][2] + f_prop[i][j][5] + f_prop[i][j][6] - f_prop[i][j][4] - f_prop[i][j][7] - f_prop[i][j][8]) / rho[i][j];
+
+//        sum_rho = 0.0;
+//        for (int k = 0; k < q_num; k++) {
+//          sum_rho += f_prop[i][j][k];
+//          rho[i][j] = sum_rho;
+//          ux[i][j] = (f_prop[i][j][1] + f_prop[i][j][5] + f_prop[i][j][8] - f_prop[i][j][3] - f_prop[i][j][6] - f_prop[i][j][7]) / rho[i][j];
+//          uy[i][j] = (f_prop[i][j][2] + f_prop[i][j][5] + f_prop[i][j][6] - f_prop[i][j][4] - f_prop[i][j][7] - f_prop[i][j][8]) / rho[i][j];
+//        }
       }
     }
 
@@ -160,12 +170,6 @@ int main() {
       for (int j = 0; j < y_len; j++) {
         vel_sq[i][j] = std::pow(ux[i][j], 2) + std::pow(uy[i][j], 2);
 
-//        for (int k = 0; k < q_num; k++) {
-//          u_dot_ci[i][j][k] = (ux[i][j] * cx_float[k] + uy[i][j] * cy_float[k]);
-
-//          f_eq[i][j][k] = w[k] * rho[i][j] * (1 + u_dot_ci[i][j][k] / cs_sq + std::pow(u_dot_ci[i][j][k], 2) / (2 * std::pow(cs_sq, 2)) - vel_sq[i][j] / (2 * cs_sq));
-//        }
-
         f_eq[i][j][0] = (4.0/9.0) * rho[i][j] * (1.0 - (vel_sq[i][j] / (2 * cs_sq)));
         f_eq[i][j][1] = (1.0/9.0) * rho[i][j] * (1.0 + (ux[i][j]) / cs_sq + (std::pow(ux[i][j], 2)) / (2 * std::pow(cs_sq, 2)) - (vel_sq[i][j]) / (2 * cs_sq));
         f_eq[i][j][2] = (1.0/9.0) * rho[i][j] * (1.0 + (uy[i][j]) / cs_sq + (std::pow(uy[i][j], 2)) / (2 * std::pow(cs_sq, 2)) - (vel_sq[i][j]) / (2 * cs_sq));
@@ -175,6 +179,12 @@ int main() {
         f_eq[i][j][6] = (1.0/36.0) * rho[i][j] * (1.0 - (ux[i][j] - uy[i][j]) / cs_sq - (ux[i][j] * uy[i][j]) / (std::pow(cs_sq, 2)) + (vel_sq[i][j]) / cs_sq);
         f_eq[i][j][7] = (1.0/36.0) * rho[i][j] * (1.0 - (ux[i][j] + uy[i][j]) / cs_sq + (ux[i][j] * uy[i][j]) / (std::pow(cs_sq, 2)) + (vel_sq[i][j]) / cs_sq);
         f_eq[i][j][8] = (1.0/36.0) * rho[i][j] * (1.0 + (ux[i][j] - uy[i][j]) / cs_sq - (ux[i][j] * uy[i][j]) / (std::pow(cs_sq, 2)) + (vel_sq[i][j]) / cs_sq);
+
+//        for (int k = 0; k < q_num; k++) {
+//          u_dot_ci[i][j][k] = (ux[i][j] * cx_float[k] + uy[i][j] * cy_float[k]);
+//          f_eq[i][j][k] = w[k] * rho[i][j] * (1 + u_dot_ci[i][j][k] / cs_sq + std::pow(u_dot_ci[i][j][k], 2) / (2 * std::pow(cs_sq, 2)) - vel_sq[i][j] / (2 * cs_sq));
+//        }
+
       }
     }
 
@@ -201,53 +211,52 @@ int main() {
       }
     }
 
-  /* Here, we apply the macroscopic boundary conditions. As mentioned in Krüger Sec. 5.3.4.1 (Pg. 190), since the lattice Boltzmann equation doesn't directly deal with the macroscopic fields (density
-   * and velocity), we need to explicitly impose the continuity equation, the no-slip condition, and the no-penetration condition. The wall density is straightforwardly calculated in the
-   * aforementioned section of Krüger. However, we note that there is an explicit de-linking of timestep and space-step in this derivation. Thus, for a speed c = dx/dt for timestep dt and space step
-   * dx, expressions that should be c/(c ± u_wall) are instead written here as 1/(1 ± u_wall). This uses Eq. 5.32 and Eq. 5.33 (Pg. 191) in Krüger. */
-   for (int i = 0; i < x_len; i++) {
-     // Here, we apply the boundary conditions for the bottom wall: continuity, no-slip (ux[i][0] = u_wall_bottom), and no-penetration (uy[i][0] = 0.0).
-     rho[i][0] = 1 / (1 - uy[i][0]) * (f_prop[i][0][0] + f_prop[i][0][1] + f_prop[i][0][3] + 2 * (f_prop[i][0][4] + f_prop[i][0][7] + f_prop[i][0][8]));
-     ux[i][0] = u_wall_bottom;
-     uy[i][0] = 0.0;
 
-     // Here, we apply the boundary conditions for the top wall: continuity, no-slip (ux[i][0] = u_wall_top), and no-penetration (uy[i][0] = 0.0).
-     rho[i][0] = 1 / (1 + uy[i][y_len - 1]) * (f_prop[i][y_len - 1][0] + f_prop[i][y_len - 1][1] + f_prop[i][y_len - 1][3]
-                                                  + 2 * (f_prop[i][y_len - 1][2] + f_prop[i][y_len - 1][5] + f_prop[i][y_len - 1][6]));
-     ux[i][y_len - 1] = u_wall_top;
-     uy[i][y_len - 1] = 0.0;
-   }
+    /* Here, we apply the macroscopic boundary conditions. As mentioned in Krüger Sec. 5.3.4.1 (Pg. 190), since the lattice Boltzmann equation doesn't directly deal with the macroscopic fields (density
+     * and velocity), we need to explicitly impose the continuity equation, the no-slip condition, and the no-penetration condition. The wall density is straightforwardly calculated in the
+     * aforementioned section of Krüger. However, we note that there is an explicit de-linking of timestep and space-step in this derivation. Thus, for a speed c = dx/dt for timestep dt and space step
+     * dx, expressions that should be c/(c ± u_wall) are instead written here as 1/(1 ± u_wall). This uses Eq. 5.32 and Eq. 5.33 (Pg. 191) in Krüger. */
+     for (int i = 0; i < x_len; i++) {
+       // Here, we apply the boundary conditions for the bottom wall: continuity, no-slip (ux[i][0] = u_wall_bottom), and no-penetration (uy[i][0] = 0.0).
+       rho[i][0] = (1.0/(1.0 - uy[i][0])) * (f_prop[i][0][0] + f_prop[i][0][1] + f_prop[i][0][3] + 2.0 * (f_prop[i][0][4] + f_prop[i][0][7] + f_prop[i][0][8]));
+       ux[i][0] = u_wall_bottom;
+       uy[i][0] = 0.0;
+
+       // Here, we apply the boundary conditions for the top wall: continuity, no-slip (ux[i][0] = u_wall_top), and no-penetration (uy[i][0] = 0.0).
+       rho[i][y_len - 1] = (1.0/(1.0 + uy[i][y_len - 1])) * (f_prop[i][y_len - 1][0] + f_prop[i][y_len - 1][1] + f_prop[i][y_len - 1][3]
+                                                          + 2.0 * (f_prop[i][y_len - 1][2] + f_prop[i][y_len - 1][5] + f_prop[i][y_len - 1][6]));
+       ux[i][y_len - 1] = u_wall_top;
+       uy[i][y_len - 1] = 0.0;
+     }
 
 
     /* Here, we apply the boundary conditions onto the newly-streamed f_prop. Here, we use the non-equilibrium (second-order) expressions in the wet-node layout. The primary focus is on the Zou-He
      * (nonequilibrium bounce back) boundary conditions (c.f. Krüger Sec. 5.3.4.4, Pgs. 196-199, Eq. 5.42-5.48). For completeness, we also provide the boundary conditions used for the nonequilibrium
      * extrapolation method (c.f. Krüger Sec. 5.3.4.3, Pgs. 194-196, Eq. 5.40-5.41; derived from Eq. 4.35 taken from Sec. 4.2.4 in Krüger, Pgs. 118-119.) */
     for (int i = 0; i < x_len; i++) {
-//      for (int k = 0; k < q_num; k++) {
-//        u_dot_ci[i][0][k] = (ux[i][0] * cx_float[k] + uy[i][0] * cy_float[k]);
-//        u_dot_ci[i][y_len - 1][k] = (ux[i][y_len - 1] * cx_float[k] + uy[i][y_len - 1] * cy_float[k]);
 
       /* Here, we incorporate the Zou-He (nonequilibrium bounce back) method, discussed in Krüger Sec. 5.3.4.4, Pgs. 196-199, Eq. 5.42-5.48. This first applies the ZH boundary conditions on the
        * bottom plate. */
-      f_prop[i][0][2] = f_prop[i][0][4] + (2*uy[i][0])/3;
-      f_prop[i][0][5] = f_prop[i][0][7] + uy[i][0]/6 - (f_prop[i][0][1] - f_prop[i][0][3])/2 + ux[i][0]/2;
-      f_prop[i][0][6] = f_prop[i][0][8] + uy[i][0]/6 + (f_prop[i][0][1] - f_prop[i][0][3])/2 - ux[i][0]/2;
+      f_prop[i][0][2] = f_prop[i][0][4] + (2.0 * rho[i][0] * uy[i][0])/3.0;
+      f_prop[i][0][5] = f_prop[i][0][7] + (rho[i][0] * uy[i][0])/6.0 - (f_prop[i][0][1] - f_prop[i][0][3])/2.0 + ux[i][0]/2.0;
+      f_prop[i][0][6] = f_prop[i][0][8] + (rho[i][0] * uy[i][0])/6.0 + (f_prop[i][0][1] - f_prop[i][0][3])/2.0 - ux[i][0]/2.0;
 
       /* Here, we incorporate the Zou-He (nonequilibrium bounce back) method, discussed in Krüger Sec. 5.3.4.4, Pgs. 196-199, Eq. 5.42-5.48. This now applies the ZH boundary conditions on the top
        * plate. */
-      f_prop[i][y_len - 1][4] = f_prop[i][y_len - 1][2] - (2*uy[i][y_len - 1])/3;
-      f_prop[i][y_len - 1][7] = f_prop[i][y_len - 1][5] - uy[i][y_len - 1]/6 + (f_prop[i][y_len - 1][1] - f_prop[i][y_len - 1][3])/2 - ux[i][y_len - 1]/2;
-      f_prop[i][y_len - 1][8] = f_prop[i][y_len - 1][6] - uy[i][y_len - 1]/6 - (f_prop[i][y_len - 1][1] - f_prop[i][y_len - 1][3])/2 + ux[i][y_len - 1]/2;
-
-      // /* Here, we incorporate the nonequilibrium extrapolation method, discussed in Krüger Sec. 5.3.4.3, Pgs. 194-196, Eq. 5.40-5.41. Those equations are originally derived from Sec. 4.2.4 in
-      //  * Krüger, Pgs. 118-119.) THIS DOES NOT YET INCORPORATE THE MULTIPLICATIVE FACTOR OF TAU. */
-      //  f_prop[i][0][k] = w[k] * (rho[i][0] + u_dot_ci[i][0][k]/cs_sq) + (f_prop[i][1][k] - f_eq[i][1][k]);
-      //  f_prop[i][y_len - 1][k] = w[k] * (rho[i][y_len - 1] + u_dot_ci[i][y_len - 1][k]/cs_sq) + (f_prop[i][y_len - 2][k] - f_eq[i][y_len - 2][k]);
-
-      
-      //}
+      f_prop[i][y_len - 1][4] = f_prop[i][y_len - 1][2] - (2.0 * rho[i][y_len - 1] * uy[i][y_len - 1])/3.0;
+      f_prop[i][y_len - 1][7] = f_prop[i][y_len - 1][5] - (rho[i][y_len - 1] * uy[i][y_len - 1])/6.0 + (f_prop[i][y_len - 1][1] - f_prop[i][y_len - 1][3])/2.0 - ux[i][y_len - 1]/2.0;
+      f_prop[i][y_len - 1][8] = f_prop[i][y_len - 1][6] - (rho[i][y_len - 1] * uy[i][y_len - 1])/6.0 - (f_prop[i][y_len - 1][1] - f_prop[i][y_len - 1][3])/2.0 + ux[i][y_len - 1]/2.0;
 
 
+//      /* Here, we incorporate the nonequilibrium extrapolation method, discussed in Krüger Sec. 5.3.4.3, Pgs. 194-196, Eq. 5.40-5.41. Those equations are originally derived from Sec. 4.2.4 in
+//       * Krüger, Pgs. 118-119.) THIS DOES NOT YET INCORPORATE THE MULTIPLICATIVE FACTOR OF TAU. */
+//      for (int k = 0; k < q_num; k++) {
+//        u_dot_ci[i][0][k] = (ux[i][0] * cx_float[k] + uy[i][0] * cy_float[k]);
+//        u_dot_ci[i][y_len - 1][k] = (ux[i][y_len - 1] * cx_float[k] + uy[i][y_len - 1] * cy_float[k]);
+//        f_prop[i][0][k] = w[k] * (rho[i][0] + u_dot_ci[i][0][k]/cs_sq) + (f_prop[i][1][k] - f_eq[i][1][k]);
+//        f_prop[i][y_len - 1][k] = w[k] * (rho[i][y_len - 1] + u_dot_ci[i][y_len - 1][k]/cs_sq) + (f_prop[i][y_len - 2][k] - f_eq[i][y_len - 2][k]);
+//      }
+    
     }
 
 
@@ -269,6 +278,7 @@ int main() {
   std::cout << std::endl;
   std::cout << std::endl;
 
+
   // Output 
   std::cout << "uy" << std::endl;
   for (int i = 0; i < x_len; i++) {
@@ -282,6 +292,7 @@ int main() {
   std::cout << std::endl;
   std::cout << std::endl;
   std::cout << std::endl;
+
 
   // Output densities
   std::cout << "rho" << std::endl;
